@@ -1,4 +1,5 @@
 from FarsightOPConv.core import FarsighOutputConverter
+from FarsightOPConv import tifffile
 import pandas as pd
 from skimage import measure, io
 import numpy as np
@@ -31,7 +32,7 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     for ind, (x, y, z) in enumerate(foc.seeds):
 
-        print(f"Doing {ind} of {foc.seeds.shape[0]}")
+        # print(f"Doing {ind} of {foc.seeds.shape[0]}")
         newLabel = relabelledImage[z, y, x]
         oldLabel = foc.labelImage[z, y, x]
 
@@ -78,7 +79,7 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
     relabelledImageUInt32 = relabelledImage.astype(np.uint32)
 
     yield 0
-    io.imsave(str(opImagePath), relabelledImageUInt32, plugin="tifffile", compress=9)
+    tifffile.imsave(str(opImagePath), relabelledImageUInt32, compress=9)
 
     statsDF.to_excel(opXLPath)
 

@@ -3,7 +3,8 @@ from FarsightOPConv.app.coreFunction import farsightOPConvAndMetrics
 import logging
 import pandas as pd
 import numpy as np
-from skimage import io
+from FarsightOPConv.tifffile import imread
+import os
 
 
 
@@ -124,20 +125,22 @@ def test_coreFunction():
     Testing FarsighOPConv.app.coreFunction
     """
 
-    testLabelFile = "tests/files/funcs/coreFunction/Act5C_no5_med1_C428_dec1_label_20LabelSubset.tiff"
-    testSeedsFile = "tests/files/funcs/coreFunction/Act5C_no5_med1_C428_dec1_seedPoints_20LabelSubset.txt"
+    testLabelFile = os.path.join("tests", "files", "funcs", "coreFunction",
+                                 "Act5C_no5_med1_C428_dec1_label_20LabelSubset.tiff")
+    testSeedsFile = os.path.join("tests", "files", "funcs", "coreFunction",
+                                 "Act5C_no5_med1_C428_dec1_seedPoints_20LabelSubset.txt")
 
-    expOutLabelFile = "tests/files/funcs/coreFunction/" \
-                      "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.tiff"
-    expOutXLFile = "tests/files/funcs/coreFunction/" \
-                   "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.xlsx"
+    expOutLabelFile = os.path.join("tests", "files", "funcs", "coreFunction",
+                      "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.tiff")
+    expOutXLFile = os.path.join("tests", "files", "funcs", "coreFunction",
+                   "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.xlsx")
 
     # testLabelFile = "tests/files/Act5C_no5_med1_C428_dec1_label.tif"
     # testSeedsFile = "tests/files/Act5C_no5_med1_C428_dec1_seedPoints.txt"
 
     outLabelFile, outXLFile = farsightOPConvAndMetrics(testLabelFile, testSeedsFile)
 
-    assert np.allclose(io.imread(outLabelFile), io.imread(expOutLabelFile))
+    assert np.allclose(imread(outLabelFile), imread(expOutLabelFile))
 
     assert pd.read_excel(outXLFile).equals(pd.read_excel(expOutXLFile))
 

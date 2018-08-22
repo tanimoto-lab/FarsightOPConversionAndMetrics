@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from skimage import io, measure
+from skimage import measure
+from FarsightOPConv import tifffile
 import logging
 import typing
 
@@ -18,7 +19,7 @@ class FarsighOutputConverter(object):
         self.outputSeedsTXT = outputSeedsTXT
 
         self.seeds = np.loadtxt(self.outputSeedsTXT, dtype=int)
-        self.labelImage = io.imread(self.outputlabelImageFile)
+        self.labelImage = tifffile.imread(self.outputlabelImageFile)
 
 
     def getDesiredLabelsDF(self):
