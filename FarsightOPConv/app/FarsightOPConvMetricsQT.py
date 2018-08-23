@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, \
     QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QGroupBox
 
 from FarsightOPConv.app.customWidgets import FileSelect, raiseInfo
-from FarsightOPConv.app.coreFunction import farsightOPConvAndMetricsGen
+from FarsightOPConv.app.coreFunction import farsightOPConvAndMetricsGen, farsightOPConvAndMetrics
 
 
 class FarsightOPConvMetricsThread(QThread):
@@ -174,7 +174,23 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
+
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = MainWindow()
-    sys.exit(app.exec_())
+
+    if len(sys.argv) == 1:
+        app = QApplication(sys.argv)
+        ex = MainWindow()
+        sys.exit(app.exec_())
+
+    elif len(sys.argv) == 4 and sys.argv[1] == "nogui" \
+            and (sys.argv[2].endswith(".tif") or sys.argv[2].endswith(".tiff")) \
+            and sys.argv[3].endswith(".txt"):
+
+        print(f"Working with\n{sys.argv[2]} and\n{sys.argv[3]}....")
+        outFiles = farsightOPConvAndMetrics(sys.argv[2], sys.argv[3])
+        print(f"Successfully finished! The following outputs were generated:\n{outFiles[0]}\n{outFiles[1]}")
+    else:
+        print("Improper Usage! This application can be used in one of two ways:\n"
+              "1. As gui: Just click on the executable FarsightOPConvMetricsQT.exe\n"
+              "2. As commandline application: Run the following command: \n"
+              "FarsightOPConvMetricsQT.exe nogui <Farsight Output Label Image file> <Farsight Output Seed points file>")
