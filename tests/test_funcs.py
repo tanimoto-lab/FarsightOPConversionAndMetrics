@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from FarsightOPConv.tifffile import imread
 import os
+import time
 
 
 
@@ -105,7 +106,6 @@ def test_getLabelSubsetImage():
 
     subsetLabels = np.random.randint(1, int(2**16 - 1), (20,))
 
-
     subsetLabelImage, subsetSeeds = foc.getLabelSubsetImage(subsetLabels)
 
     for subsetLabel in subsetLabels:
@@ -120,9 +120,9 @@ def test_getLabelSubsetImage():
     assert temp == set(subsetLabels)
 
 
-def test_coreFunction():
+def test_coreFunction_small():
     """
-    Testing FarsighOPConv.app.coreFunction
+    Testing FarsighOPConv.app.coreFunction with a short runtime case
     """
 
     testLabelFile = os.path.join("tests", "files", "funcs", "coreFunction",
@@ -138,7 +138,47 @@ def test_coreFunction():
     # testLabelFile = "tests/files/Act5C_no5_med1_C428_dec1_label.tif"
     # testSeedsFile = "tests/files/Act5C_no5_med1_C428_dec1_seedPoints.txt"
 
+
+    print(f"Running tests using\n{testLabelFile} and\n{testSeedsFile}")
+    startTime = time.time()
     outLabelFile, outXLFile = farsightOPConvAndMetrics(testLabelFile, testSeedsFile)
+    endTime = time.time()
+
+    duration = endTime - startTime
+
+    print(f"Execution time of core Function: {duration/60}min")
+
+    assert np.allclose(imread(outLabelFile), imread(expOutLabelFile))
+
+    assert pd.read_excel(outXLFile).equals(pd.read_excel(expOutXLFile))
+
+
+def test_coreFunction_medium():
+    """
+    Testing FarsighOPConv.app.coreFunction with a medium runtime case
+    """
+
+    testLabelFile = os.path.join("tests", "files",
+                                 "Act5C_no5_med1_C428_dec1_label_6630LabelSubset.tif")
+    testSeedsFile = os.path.join("tests", "files",
+                                 "Act5C_no5_med1_C428_dec1_seedPoints_6630LabelSubset.txt")
+
+
+
+    expOutLabelFile = os.path.join("tests", "files",
+                      "Act5C_no5_med1_C428_dec1_label_6630LabelSubset_corrected32Bit_exp.tif")
+    expOutXLFile = os.path.join("tests", "files",
+                   "Act5C_no5_med1_C428_dec1_label_6630LabelSubset_corrected32Bit_exp.xlsx")
+
+
+    print(f"Running tests using\n{testLabelFile} and\n{testSeedsFile}")
+    startTime = time.time()
+    outLabelFile, outXLFile = farsightOPConvAndMetrics(testLabelFile, testSeedsFile)
+    endTime = time.time()
+
+    duration = endTime - startTime
+
+    print(f"Execution time of core Function: {duration/60}min")
 
     assert np.allclose(imread(outLabelFile), imread(expOutLabelFile))
 
@@ -146,7 +186,8 @@ def test_coreFunction():
 
 
 if __name__ == "__main__":
-    test_coreFunction()
+    test_coreFunction_medium()
 
+    import SimpleITK as sitk
 
 
