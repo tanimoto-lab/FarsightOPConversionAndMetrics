@@ -1,4 +1,4 @@
-from FarsightOPConv.core import FarsighOutputConverter
+from FarsightOPConv.core import FarsighOutputConverter, replaceLabels
 from FarsightOPConv import tifffile
 import pandas as pd
 from skimage import measure, io
@@ -56,15 +56,15 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     yield 0
 
-    toRemoveMask = np.zeros_like(relabelledImage, dtype=bool)
-    for ind, (label, toRetain) in enumerate(labelsDone.items()):
+    labels2Remove = [x for x, v in labelsDone.items() if not v]
+
+    yields = []
+    for ret in replaceLabels(relabelledImage, labels2Remove, 0, makeGenerator=True):
+
         yield 0
-        if not toRetain:
-            toRemoveMask = np.logical_or(toRemoveMask, relabelledImage == label)
+        yields.append(ret)
 
-    relabelledImage[toRemoveMask] = 0
-
-    yield 0
+    relabelledImageFiltered = yields[-1]
 
     statsDF = pd.DataFrame(columns=("New Label", "Farsight Output Label", "Farsight Output Seed",
                                     "Centroid", "Volume (number of pixels)"),
@@ -76,7 +76,7 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     yield 0
 
-    relabelledImageUInt32 = relabelledImage.astype(np.uint32)
+    relabelledImageUInt32 = relabelledImageFiltered.astype(np.uint32)
 
     yield 0
     tifffile.imsave(str(opImagePath), relabelledImageUInt32, compress=9)

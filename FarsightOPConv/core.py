@@ -120,3 +120,39 @@ class FarsighOutputConverter(object):
         subsetSeeds = tuple(x for x in self.seeds if subsetLabelImage[x[2], x[1], x[0]] > 0)
 
         return subsetLabelImage, subsetSeeds
+
+
+def replaceLabels(image: np.ndarray, labels2Replace:typing.Iterable, replaceValue, makeGenerator=False) -> np.ndarray:
+    """
+    Replaces the values of pixels in <labels2Replace> with replaceValue
+    :param image: np.ndarray, input image
+    :param toReplace: iterable of labels, of the type image.dtype
+    :param replaceValue: value of type image.dtype
+    :return: np.ndarray
+    """
+
+    imageCopy = image.copy()
+
+    assert all(type(x) == image.dtype for x in labels2Replace), \
+        f"All elements of labels2Replace are not of type {image.dype}"
+
+    toRemoveMask = np.zeros_like(image, dtype=bool)
+    if makeGenerator:
+
+        for ind, labels2Replace in enumerate(labels2Replace):
+            yield 0
+            toRemoveMask = np.logical_or(toRemoveMask, image == labels2Replace)
+
+    else:
+
+        for ind, labels2Replace in enumerate(labels2Replace):
+            toRemoveMask = np.logical_or(toRemoveMask, image == labels2Replace)
+
+    imageCopy[toRemoveMask] = replaceValue
+
+    if makeGenerator:
+        yield imageCopy
+    else:
+        return imageCopy
+
+
