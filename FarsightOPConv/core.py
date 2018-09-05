@@ -136,18 +136,11 @@ def replaceLabels(image: np.ndarray, labels2Replace:typing.Iterable, replaceValu
     assert all(type(x) == image.dtype for x in labels2Replace), \
         f"All elements of labels2Replace are not of type {image.dype}"
 
-    toRemoveMask = np.zeros_like(image, dtype=bool)
-    if makeGenerator:
 
-        for ind, labels2Replace in enumerate(labels2Replace):
-            yield 0
-            toRemoveMask = np.logical_or(toRemoveMask, image == labels2Replace)
+    labels2ReplaceFrozenSet = frozenset(labels2Replace)
+    maskFuncVectorized = np.vectorize(lambda x: x in labels2ReplaceFrozenSet)
 
-    else:
-
-        for ind, labels2Replace in enumerate(labels2Replace):
-            toRemoveMask = np.logical_or(toRemoveMask, image == labels2Replace)
-
+    toRemoveMask = maskFuncVectorized(image)
     imageCopy[toRemoveMask] = replaceValue
 
     if makeGenerator:
