@@ -1,11 +1,14 @@
 from FarsightOPConv.core import FarsighOutputConverter
 from FarsightOPConv.app.coreFunction import farsightOPConvAndMetrics
+from FarsightOPConv.sitkFuncs import getLabelShapeStatistics
 import logging
 import pandas as pd
 import numpy as np
 from FarsightOPConv.tifffile import imread
 import os
 import time
+import SimpleITK as sitk
+from ast import literal_eval as make_tuple
 
 
 
@@ -66,8 +69,8 @@ def test_separateMultipleLabels():
     Testing the method FarsightOPConv.core.separateMultipleLabels
     """
 
-    testLabelFile = "tests/files/funcs/separateMultipleLabels/Act5C_no5_med1_C428_dec1_label_20LabelSubset.tiff"
-    testSeedsFile = "tests/files/funcs/separateMultipleLabels/Act5C_no5_med1_C428_dec1_seedPoints_20LabelSubset.txt"
+    testLabelFile = "tests/files/Act5C_no5_med1_C428_dec1_label_20LabelSubset.tif"
+    testSeedsFile = "tests/files/Act5C_no5_med1_C428_dec1_seedPoints_20LabelSubset.txt"
 
     foc = FarsighOutputConverter(testLabelFile, testSeedsFile)
 
@@ -126,13 +129,13 @@ def test_coreFunction_small():
     """
 
     testLabelFile = os.path.join("tests", "files", "funcs", "coreFunction",
-                                 "Act5C_no5_med1_C428_dec1_label_20LabelSubset.tiff")
+                                 "Act5C_no5_med1_C428_dec1_label_20LabelSubset.tif")
     testSeedsFile = os.path.join("tests", "files", "funcs", "coreFunction",
                                  "Act5C_no5_med1_C428_dec1_seedPoints_20LabelSubset.txt")
 
-    expOutLabelFile = os.path.join("tests", "files", "funcs", "coreFunction",
+    expOutLabelFile = os.path.join("tests", "files",
                       "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.tiff")
-    expOutXLFile = os.path.join("tests", "files", "funcs", "coreFunction",
+    expOutXLFile = os.path.join("tests", "files",
                    "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.xlsx")
 
     # testLabelFile = "tests/files/Act5C_no5_med1_C428_dec1_label.tif"
@@ -185,9 +188,35 @@ def test_coreFunction_medium():
     assert pd.read_excel(outXLFile).equals(pd.read_excel(expOutXLFile))
 
 
+def test_getLabelShapeStats():
+    """
+    Testing the function FarsightOPConv.sitkFuncs.getLabelShapeStatistics
+    """
+
+    testFile = os.path.join("tests", "files",
+                                 "Act5C_no5_med1_C428_dec1_label_20LabelSubset_corrected32Bit_exp.tiff")
+    outFile = os.path.join("tests", "files", "funcs", "getLabelShapeStats", "output.xlsx")
+    expected_outFile = os.path.join("tests", "files", "funcs", "getLabelShapeStats", "expectedOutput.xlsx")
+
+    testImageNP = imread(testFile)
+    testImageNPUInt16 = testImageNP.astype(np.uint16)
+
+    measureNames, measureValues = getLabelShapeStatistics(testImageNPUInt16)
+
+    outDF = pd.DataFrame(columns=measureNames, data=measureValues)
+    outDF.to_excel(outFile)
+
+    expected_outDF = pd.read_excel(expected_outFile)
+
+    arrayCols = ["Centroid", "Principal Moments"]
+
+    expected_outDF[arrayCols] = expected_outDF[arrayCols].applymap(make_tuple)
+
+    assert outDF.equals(expected_outDF)
+
+
 if __name__ == "__main__":
     test_coreFunction_medium()
 
-    import SimpleITK as sitk
 
 
