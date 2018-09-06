@@ -1,7 +1,8 @@
 from FarsightOPConv.core import FarsighOutputConverter, replaceLabels
+from FarsightOPConv.img32bit16bitIO import labelConv32bitTo16bit
 from FarsightOPConv import tifffile
+from FarsightOPConv.sitkFuncs import getLabelShapeStatistics
 import pandas as pd
-from skimage import measure, io
 import numpy as np
 import pathlib as pl
 
@@ -22,13 +23,12 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     yield 0
 
-    regProps = measure.regionprops(relabelledImage)
+    newLabelsAll = np.unique(relabelledImage)[1:]
+    labelsDone = {x: False for x in newLabelsAll}
 
-    yield 0
-
-    newLabels = np.unique(relabelledImage)[1:]
-    labelsDone = {x: False for x in newLabels}
-    statsList = []
+    newLabels = []
+    oldLabels = []
+    farsightOPSeeds = []
 
     for ind, (x, y, z) in enumerate(foc.seeds):
 
@@ -40,19 +40,9 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
             if not labelsDone[newLabel]:
 
                 labelsDone[newLabel] = True
-
-                centroid = regProps[newLabel - 1].centroid
-
-                volume = regProps[newLabel - 1].filled_area
-
-                statsList.append([newLabel, oldLabel, f"({x:d},{y:d}, {z:d})",
-                                  f"({centroid[2]:0.5g}, {centroid[1]:0.5g}, {centroid[0]:0.5g})",
-                                  volume])
-
-            else:
-                statsList.append([np.nan, oldLabel, f"({x:d},{y:d}, {z:d})", np.nan, np.nan])
-        else:
-            statsList.append([np.nan, oldLabel, f"({x:d},{y:d}, {z:d})", np.nan, np.nan])
+                newLabels.append(newLabel)
+                oldLabels.append(oldLabel)
+                farsightOPSeeds.append((round(x, 6), round(y, 6), round(z, 6)))
 
     yield 0
 
@@ -66,9 +56,32 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     relabelledImageFiltered = yields[-1]
 
-    statsDF = pd.DataFrame(columns=("New Label", "Farsight Output Label", "Farsight Output Seed",
-                                    "Centroid", "Volume (number of pixels)"),
-                           data=statsList)
+    relabelledImageUInt32 = relabelledImageFiltered.astype(np.uint32)
+
+    yield 0
+
+    statsDF = pd.DataFrame()
+    statsDF["New Label"] = newLabels
+    statsDF["Farsight Output Label"] = oldLabels
+    statsDF["Farsight Output Seed"] = farsightOPSeeds
+
+    statsDF.set_index("New Label", inplace=True)
+    statsDF.sort_index(inplace=True)
+
+    imgs16bit, labelMapDF = labelConv32bitTo16bit(relabelledImageUInt32)
+
+    for imgInd, img16bit in enumerate(imgs16bit):
+
+        yield 0
+        measureNames, measureValues = getLabelShapeStatistics(img16bit)
+        imgStatsDF = pd.DataFrame(data=measureValues, columns=measureNames)
+        imgStatsDF.sort_values(by="Label Value", inplace=True)
+        imgLabelMap = labelMapDF[labelMapDF["Output Image Index"] == imgInd].copy()
+        imgLabelMap.sort_values(by="Output Label", inplace=True)
+        imgStatsDF["New Label"] = imgLabelMap["Input Label"].values
+        imgStatsDF.rename(columns={"Label Value": "Temporary\nInternal Label"}, inplace=True)
+        imgStatsDF.set_index("New Label", inplace=True)
+        statsDF = statsDF.combine_first(imgStatsDF)
 
     ipImagePath = pl.Path(farsightOPImageFile)
     opImagePath = ipImagePath.parent / f"{ipImagePath.stem}_corrected32Bit{ipImagePath.suffix}"
@@ -76,9 +89,6 @@ def farsightOPConvAndMetricsGen(farsightOPImageFile: str, farsightOPSeedsFile: s
 
     yield 0
 
-    relabelledImageUInt32 = relabelledImageFiltered.astype(np.uint32)
-
-    yield 0
     tifffile.imsave(str(opImagePath), relabelledImageUInt32, compress=9)
 
     statsDF.to_excel(opXLPath)

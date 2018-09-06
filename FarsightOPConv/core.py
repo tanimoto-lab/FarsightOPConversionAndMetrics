@@ -112,10 +112,11 @@ class FarsighOutputConverter(object):
         subsetLabelImage = np.zeros_like(self.labelImage)
 
         labelUnique = np.unique(self.labelImage)
+        labelUnique = frozenset(labelUnique[labelUnique != 0])
 
         for label in labelSubset:
-            assert label in labelUnique
-            subsetLabelImage[self.labelImage == label] = label
+            if label in labelUnique:
+                subsetLabelImage[self.labelImage == label] = label
 
         subsetSeeds = tuple(x for x in self.seeds if subsetLabelImage[x[2], x[1], x[0]] > 0)
 

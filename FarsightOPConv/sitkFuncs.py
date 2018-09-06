@@ -26,7 +26,7 @@ def getLabelShapeStatistics(image: typing.Union[np.ndarray, sitk.Image, str]) ->
         raise(TypeError(f"Argument Image is of unknown type {type(image)}"))
 
     labelStats = sitk.LabelShapeStatisticsImageFilter()
-    labelStats.ComputeFeretDiameterOn()
+    labelStats.ComputePerimeterOn()
     labelStats.Execute(image)
 
     labels = labelStats.GetLabels()
